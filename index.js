@@ -14,7 +14,6 @@ const mnemonics = fs.readFileSync("mnemonics.txt", "utf8")
 
 const RPC = process.env.RPC;
 const DENOM = process.env.DENOM;
-const RECEIVER = process.env.RECEIVER;
 const GAS_FEE = parseInt(process.env.GAS_FEE); // in uxion
 
 const rl = readline.createInterface({
@@ -48,12 +47,22 @@ async function sendTokens(mnemonic, index) {
     console.log(`\nWallet #${index + 1}: ${account.address}`);
     console.log(`💰 Balance: ${balanceAmount} ${DENOM} (${formatUxionToXion(balanceAmount)} xion)`);
 
-    const input = await prompt(`👉 How much do you want to send (in xion, max: ${formatUxionToXion(maxSendable)} xion)? `);
-    const amountToSendXion = parseFloat(input);
-    const amountToSend = Math.floor(amountToSendXion * 1_000_000);
+    const receiver = await prompt("📬 Enter receiver address: ");
+    if (!receiver || !receiver.startsWith("xion1")) {
+      console.log("❌ Invalid receiver address. Skipping...");
+      return;
+    }
 
-    if (isNaN(amountToSendXion) || amountToSend <= 0 || amountToSend > maxSendable) {
-      console.log("❌ Invalid amount. Skipping...");
+    const xionInput = await prompt(`👉 How much do you want to send (in xion, max: ${formatUxionToXion(maxSendable)} xion)? `);
+    const xionAmount = parseFloat(xionInput);
+    if (isNaN(xionAmount) || xionAmount <= 0) {
+      console.log("❌ Invalid number. Skipping...");
+      return;
+    }
+
+    const uxionToSend = Math.floor(xionAmount * 1_000_000);
+    if (uxionToSend > maxSendable) {
+      console.log("❌ Amount exceeds max sendable. Skipping...");
       return;
     }
 
@@ -62,9 +71,15 @@ async function sendTokens(mnemonic, index) {
       gas: "200000",
     };
 
-    const result = await client.sendTokens(account.address, RECEIVER, coins(amountToSend.toString(), DENOM), fee, "Auto transfer");
+    const result = await client.sendTokens(
+      account.address,
+      receiver,
+      coins(uxionToSend.toString(), DENOM),
+      fee,
+      "Auto transfer"
+    );
 
-    console.log(`✅ Sent ${amountToSend} ${DENOM} (${formatUxionToXion(amountToSend)} xion) from ${account.address} → ${RECEIVER}`);
+    console.log(`✅ Sent ${uxionToSend} ${DENOM} (${xionAmount} xion) from ${account.address} → ${receiver}`);
   } catch (err) {
     console.error(`❌ Error in wallet #${index + 1}:`, err.message);
   }
