@@ -23,7 +23,7 @@ const rl = readline.createInterface({
 });
 
 function formatUxionToXion(uxion) {
-  return (uxion / 1_000_000).toFixed(6); // show up to 6 decimals
+  return (uxion / 1_000_000).toFixed(6);
 }
 
 async function prompt(question) {
@@ -48,10 +48,11 @@ async function sendTokens(mnemonic, index) {
     console.log(`\nWallet #${index + 1}: ${account.address}`);
     console.log(`💰 Balance: ${balanceAmount} ${DENOM} (${formatUxionToXion(balanceAmount)} xion)`);
 
-    const input = await prompt(`👉 How much ${DENOM} (uxion) do you want to send (max: ${maxSendable} / ${formatUxionToXion(maxSendable)} xion)? `);
-    const amountToSend = parseInt(input);
+    const input = await prompt(`👉 How much do you want to send (in xion, max: ${formatUxionToXion(maxSendable)} xion)? `);
+    const amountToSendXion = parseFloat(input);
+    const amountToSend = Math.floor(amountToSendXion * 1_000_000);
 
-    if (isNaN(amountToSend) || amountToSend <= 0 || amountToSend > maxSendable) {
+    if (isNaN(amountToSendXion) || amountToSend <= 0 || amountToSend > maxSendable) {
       console.log("❌ Invalid amount. Skipping...");
       return;
     }
