@@ -29,7 +29,7 @@ async function prompt(question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
-async function sendTokens(mnemonic, index) {
+async function sendTokens(mnemonic, index, receiver, uxionToSend) {
   try {
     const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "xion" });
     const [account] = await wallet.getAccounts();
@@ -44,27 +44,13 @@ async function sendTokens(mnemonic, index) {
       return;
     }
 
+    if (uxionToSend > maxSendable) {
+      console.log(`⚠️  Wallet #${index + 1} [${account.address}] cannot send ${uxionToSend} uxion (max: ${maxSendable}). Skipping...`);
+      return;
+    }
+
     console.log(`\nWallet #${index + 1}: ${account.address}`);
     console.log(`💰 Balance: ${balanceAmount} ${DENOM} (${formatUxionToXion(balanceAmount)} xion)`);
-
-    const receiver = await prompt("📬 Enter receiver address: ");
-    if (!receiver || !receiver.startsWith("xion1")) {
-      console.log("❌ Invalid receiver address. Skipping...");
-      return;
-    }
-
-    const xionInput = await prompt(`👉 How much do you want to send (in xion, max: ${formatUxionToXion(maxSendable)} xion)? `);
-    const xionAmount = parseFloat(xionInput);
-    if (isNaN(xionAmount) || xionAmount <= 0) {
-      console.log("❌ Invalid number. Skipping...");
-      return;
-    }
-
-    const uxionToSend = Math.floor(xionAmount * 1_000_000);
-    if (uxionToSend > maxSendable) {
-      console.log("❌ Amount exceeds max sendable. Skipping...");
-      return;
-    }
 
     const fee = {
       amount: coins(GAS_FEE.toString(), DENOM),
@@ -79,16 +65,34 @@ async function sendTokens(mnemonic, index) {
       "Auto transfer"
     );
 
-    console.log(`✅ Sent ${uxionToSend} ${DENOM} (${xionAmount} xion) from ${account.address} → ${receiver}`);
+    console.log(`✅ Sent ${uxionToSend} ${DENOM} (${formatUxionToXion(uxionToSend)} xion) from ${account.address} → ${receiver}`);
   } catch (err) {
     console.error(`❌ Error in wallet #${index + 1}:`, err.message);
   }
 }
 
 async function main() {
-  for (let i = 0; i < mnemonics.length; i++) {
-    await sendTokens(mnemonics[i], i);
+  const receiver = await prompt("📬 Enter receiver address: ");
+  if (!receiver || !receiver.startsWith("xion1")) {
+    console.log("❌ Invalid receiver address.");
+    rl.close();
+    return;
   }
+
+  const xionInput = await prompt("💸 Enter amount to send (in xion): ");
+  const xionAmount = parseFloat(xionInput);
+  if (isNaN(xionAmount) || xionAmount <= 0) {
+    console.log("❌ Invalid amount.");
+    rl.close();
+    return;
+  }
+
+  const uxionToSend = Math.floor(xionAmount * 1_000_000);
+
+  for (let i = 0; i < mnemonics.length; i++) {
+    await sendTokens(mnemonics[i], i, receiver, uxionToSend);
+  }
+
   rl.close();
 }
 
