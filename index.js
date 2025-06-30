@@ -1,7 +1,10 @@
-require("dotenv").config();
-const fs = require("fs");
-const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
-const { SigningStargateClient, coins } = require("@cosmjs/stargate");
+// index.js (ES Module style)
+import dotenv from "dotenv";
+import fs from "fs";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { SigningStargateClient, coins } from "@cosmjs/stargate";
+
+dotenv.config();
 
 const mnemonics = fs.readFileSync("mnemonics.txt", "utf8").trim().split("\n");
 
