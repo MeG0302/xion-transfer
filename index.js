@@ -22,6 +22,10 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+function formatUxionToXion(uxion) {
+  return (uxion / 1_000_000).toFixed(6); // show up to 6 decimals
+}
+
 async function prompt(question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
@@ -42,9 +46,9 @@ async function sendTokens(mnemonic, index) {
     }
 
     console.log(`\nWallet #${index + 1}: ${account.address}`);
-    console.log(`💰 Balance: ${balanceAmount} ${DENOM}`);
+    console.log(`💰 Balance: ${balanceAmount} ${DENOM} (${formatUxionToXion(balanceAmount)} xion)`);
 
-    const input = await prompt(`👉 How much ${DENOM} do you want to send (max: ${maxSendable})? `);
+    const input = await prompt(`👉 How much ${DENOM} (uxion) do you want to send (max: ${maxSendable} / ${formatUxionToXion(maxSendable)} xion)? `);
     const amountToSend = parseInt(input);
 
     if (isNaN(amountToSend) || amountToSend <= 0 || amountToSend > maxSendable) {
@@ -58,7 +62,8 @@ async function sendTokens(mnemonic, index) {
     };
 
     const result = await client.sendTokens(account.address, RECEIVER, coins(amountToSend.toString(), DENOM), fee, "Auto transfer");
-    console.log(`✅ Sent ${amountToSend} ${DENOM} from ${account.address} → ${RECEIVER}`);
+
+    console.log(`✅ Sent ${amountToSend} ${DENOM} (${formatUxionToXion(amountToSend)} xion) from ${account.address} → ${RECEIVER}`);
   } catch (err) {
     console.error(`❌ Error in wallet #${index + 1}:`, err.message);
   }
