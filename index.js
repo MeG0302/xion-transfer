@@ -6,7 +6,11 @@ import { SigningStargateClient, coins } from "@cosmjs/stargate";
 
 dotenv.config();
 
-const mnemonics = fs.readFileSync("mnemonics.txt", "utf8").trim().split("\n");
+// Read and validate mnemonics
+const mnemonics = fs.readFileSync("mnemonics.txt", "utf8")
+  .split("\n")
+  .map(line => line.trim())
+  .filter(line => line.split(" ").length === 12); // Only keep valid 12-word mnemonics
 
 const RPC = process.env.RPC;
 const DENOM = process.env.DENOM;
@@ -24,7 +28,7 @@ async function sendTokens(mnemonic, index) {
     const amountToSend = parseInt(balance.amount) - GAS_FEE;
 
     if (amountToSend <= 0) {
-      console.log(`Wallet #${index + 1} [${account.address}] has insufficient balance.`);
+      console.log(`❌ Wallet #${index + 1} [${account.address}] has insufficient balance.`);
       return;
     }
 
@@ -33,11 +37,17 @@ async function sendTokens(mnemonic, index) {
       gas: "200000",
     };
 
-    const result = await client.sendTokens(account.address, RECEIVER, coins(amountToSend.toString(), DENOM), fee, "Auto transfer");
+    const result = await client.sendTokens(
+      account.address,
+      RECEIVER,
+      coins(amountToSend.toString(), DENOM),
+      fee,
+      "Auto transfer"
+    );
 
     console.log(`✅ Sent ${amountToSend} ${DENOM} from ${account.address} → ${RECEIVER}`);
   } catch (err) {
-    console.error(`❌ Error in wallet #${index + 1}:`, err.message);
+    console.error(`❌ Error in wallet #${index + 1}: ${err.message}`);
   }
 }
 
